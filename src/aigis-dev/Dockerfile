@@ -19,9 +19,8 @@ RUN chmod 777 /tmp \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js (via NodeSource)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash \
     && apt-get install -y nodejs \
-    && npm install -g npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Update environment variables
