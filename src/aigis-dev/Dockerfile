@@ -86,3 +86,4 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
 
 # OpenCode
 RUN curl -fsSL https://opencode.ai/install | bash
+
