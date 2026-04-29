@@ -27,7 +27,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash \
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib"
 
 # Python
-RUN apt-get update && apt-get install -y python3.10 python3-setuptools \
+RUN apt-get update && apt-get install -y python3.10 python3-setuptools python-is-python3\
     && curl -LsSf https://bootstrap.pypa.io/pip/get-pip.py | python3.10 \
     && pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
     && pip3 install setuptools pandas numpy ipython \
