@@ -95,5 +95,9 @@ RUN curl -fsSL https://opencode.ai/install | bash
 # Clone aigis repository to /work
 RUN sudo mkdir -p /work \
     && sudo chown -R $USERNAME:$USER_GID /work \
-    && git clone https://github.com/PengweeWang/aigis /work
+    && git clone https://github.com/PengweeWang/aigis /work/aigis
+
+# Run opencode in aigis directory, wait 30s, then stop
+RUN cd /work/aigis \
+    && timeout 30 opencode . || true
 
