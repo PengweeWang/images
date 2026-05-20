@@ -95,7 +95,7 @@ RUN curl -fsSL https://opencode.ai/install | bash
 # Clone aigis repository to /work
 RUN sudo mkdir -p /work \
     && sudo chown -R $USERNAME:$USER_GID /work \
-    && git clone https://github.com/PengweeWang/aigis /work/aigis
+    && git clone https://github.com/PengweeWang/aigis.git /work/aigis
 
 # Install opencode dependencies in aigis/.opencode directory
 RUN cd /work/aigis/.opencode \
