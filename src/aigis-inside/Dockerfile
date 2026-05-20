@@ -97,7 +97,7 @@ RUN sudo mkdir -p /work \
     && sudo chown -R $USERNAME:$USER_GID /work \
     && git clone https://github.com/PengweeWang/aigis /work/aigis
 
-# Run opencode in aigis directory, wait 30s, then stop
-RUN cd /work/aigis \
-    && timeout 30 opencode . || true
+# Install opencode dependencies in aigis/.opencode directory
+RUN cd /work/aigis/.opencode \
+    && npm install .
 
