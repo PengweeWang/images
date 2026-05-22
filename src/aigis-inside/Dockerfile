@@ -92,12 +92,14 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
 # OpenCode
 RUN curl -fsSL https://opencode.ai/install | bash
 
-# Clone aigis repository to /work
-RUN sudo mkdir -p /work \
-    && sudo chown -R $USERNAME:$USER_GID /work \
-    && git clone https://github.com/PengweeWang/aigis /work/aigis
+# Code Server (browser-based VS Code)
+RUN curl -fsSL https://code-server.dev/install.sh | sh \
+    && mkdir -p ~/.config/code-server \
+    && echo 'bind-addr: 0.0.0.0:7568' > ~/.config/code-server/config.yaml \
+    && echo 'auth: none' >> ~/.config/code-server/config.yaml \
+    && echo 'cert: false' >> ~/.config/code-server/config.yaml
 
-# Install opencode dependencies in aigis/.opencode directory
-RUN cd /work/aigis/.opencode \
-    && npm install .
+# Create /work directory (code will be mounted at runtime)
+RUN sudo mkdir -p /work \
+    && sudo chown -R $USERNAME:$USER_GID /work
 
