@@ -1,4 +1,4 @@
-FROM nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
+FROM nvcr.io/nvidia/pytorch:25.10-py3
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get clean && \
@@ -10,26 +10,13 @@ RUN apt-get clean && \
     wget \
     curl \
     build-essential \
-    python3 \
-    python3-dev\
     git \
     git-lfs \
     sudo \
     zsh
 RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 
-# ─── pip ─────────────────────────────────────────────────────────────────────
-
-WORKDIR /tmp
-RUN wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py && \
-    python3 get-pip.py && \
-    rm -rf /tmp/get-pip.py
-
-
 # ─── python packages ─────────────────────────────────────────────────────────────────────
-
-# install pytorch 2.9 with cuda 13.0 support
-RUN pip3 install -U torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu130
 
 RUN pip3 install -U \
     imageio \
