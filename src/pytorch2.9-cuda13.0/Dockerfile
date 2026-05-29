@@ -8,6 +8,7 @@ RUN apt-get clean && \
     vim \
     ffmpeg \
     wget \
+    curl \
     build-essential \
     python3 \
     python3-dev\
