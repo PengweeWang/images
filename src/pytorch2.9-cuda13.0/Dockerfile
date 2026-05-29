@@ -118,3 +118,7 @@ RUN mkdir -p ~/.config/code-server \
 RUN code-server --install-extension ms-python.python \
     && code-server --install-extension aaron-bond.better-comments \
     && code-server --install-extension MS-CEINTL.vscode-language-pack-zh-hans
+
+# ─── cleanup ─────────────────────────────────────────────────────────────────
+USER root
+RUN pip cache purge && rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
