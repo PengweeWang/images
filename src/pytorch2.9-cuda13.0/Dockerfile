@@ -45,8 +45,6 @@ RUN pip3 install -U \
     timm \
     torchtext \
     tqdm \
-    matplotlib \
-    tifffile \
     prophet \
     xgboost \
     scikit-learn \
@@ -88,7 +86,8 @@ RUN existing_user=$(getent passwd $USER_UID | cut -d: -f1); \
 # Zsh
 RUN sudo chsh -s /bin/zsh $USERNAME
 
-# ohmyzsh and vimrc
+# ohmyzsh and vimrc (installed for user rose)
+USER $USERNAME
 RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)" "" --unattended \
     && git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions \
     && git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions \
@@ -104,14 +103,17 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
     && sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/g' ~/.bashrc \
     && mkdir -p ~/.vscode-server/data/Machine
 
-# Code Server (browser-based VS Code)
-RUN curl -fsSL https://code-server.dev/install.sh | sh \
-    && mkdir -p ~/.config/code-server \
+# Code Server (browser-based VS Code) — system-wide install
+USER root
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+USER $USERNAME
+RUN mkdir -p ~/.config/code-server \
     && echo 'bind-addr: 0.0.0.0:7568' > ~/.config/code-server/config.yaml \
     && echo 'auth: none' >> ~/.config/code-server/config.yaml \
     && echo 'cert: false' >> ~/.config/code-server/config.yaml
 
-# VS Code extensions
+# VS Code extensions (for user rose)
 RUN code-server --install-extension ms-python.python \
     && code-server --install-extension aaron-bond.better-comments \
     && code-server --install-extension MS-CEINTL.vscode-language-pack-zh-hans
