@@ -6,7 +6,7 @@
 |------|----------|------|----------|
 | `aigis-dev` | ubuntu22.04 devcontainer | aigis | 通用 Python/Node.js 开发环境 |
 | `aigis-inside` | 基于 aigis-dev | aigis | 浏览器 IDE（Code Server）远程开发 |
-| `pytorch2.9-cuda13.0` | cuda:13.0.2-cudnn-devel-ubuntu24.04 | rose | PyTorch 2.9 深度学习训练推理 |
+| `pytorch2.9-cuda13.0` | nvcr.io/nvidia/pytorch:25.10-py3 | rose | PyTorch 2.9 深度学习训练推理 |
 
 ---
 
@@ -33,13 +33,14 @@
 
 ## `pytorch2.9-cuda13.0` — 深度学习镜像
 
-- **基础**: `nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04` | **用户**: `rose`
+- **基础**: `nvcr.io/nvidia/pytorch:25.10-py3` | **Ubuntu**: 24.04 | **CUDA**: 13.0.2 | **Python**: 3.12 | **用户**: `rose`
 - **系统**: vim, wget, git-lfs, ffmpeg, build-essential
-- **深度学习**: PyTorch 2.9 + torchvision + torchaudio + xformers (cu130), transformers/diffusers/timm, bitsandbytes/deepspeed/accelerate/optimum/transformer-engine
+- **深度学习**: NGC 预装 PyTorch 2.9 + torchvision + torchaudio, transformers/diffusers/timm, bitsandbytes/deepspeed/accelerate/optimum/transformer-engine
 - **数据/ML**: numpy/pandas/scipy, scikit-learn/image, prophet/xgboost, jupyterlab/notebook
 - **MLOps**: wandb, mlflow, minio
 - **Shell**: Oh My Zsh + amix/vimrc + Code Server (7568)
 - **VS Code 扩展**: Python, Better Comments, 中文语言包
+- **Python 包**: 通过单独 `requirements.txt` 管理，便于维护
 - **场景**: PyTorch 训练推理、NLP/CV/多模态大模型、模型量化与调优
 
 > 仅支持 CUDA 13.0+ GPU。低版本 CUDA 需切换 PyTorch 索引源。
