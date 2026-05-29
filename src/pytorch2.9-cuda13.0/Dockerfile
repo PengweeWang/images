@@ -12,7 +12,8 @@ RUN apt-get clean && \
     python3 \
     python3-dev\
     git \
-    git-lfs
+    git-lfs \
+    sudo
 RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 
 # ─── pip ─────────────────────────────────────────────────────────────────────
