@@ -1,9 +1,15 @@
+# =============================================================================
+# Base Image
+# =============================================================================
+
 FROM nvcr.io/nvidia/pytorch:25.10-py3
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get clean && \
-    apt update -y && \
-    apt upgrade -y && \
+# =============================================================================
+# System Dependencies
+# =============================================================================
+
+RUN apt update -y && \
     apt install -y --no-install-recommends \
     vim \
     ffmpeg \
@@ -13,48 +19,34 @@ RUN apt-get clean && \
     git \
     git-lfs \
     sudo \
-    zsh
+    zsh \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# ─── Remove pip externally-managed restriction ────────────────────────────────
+
 RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 
-# ─── python packages ─────────────────────────────────────────────────────────────────────
+# =============================================================================
+# Python Packages
+# =============================================================================
 
-RUN pip3 install -U \
-    imageio \
-    jupyterlab \
-    matplotlib \
-    notebook \
-    numpy \
-    opencv-contrib-python \
-    opencv-python \
-    pandas \
-    scipy \
-    seaborn \
-    tifffile \
-    timm \
-    torchtext \
-    tqdm \
-    prophet \
-    xgboost \
-    scikit-learn \
-    scikit-image
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt \
+    && pip cache purge \
+    && rm -f /tmp/requirements.txt
 
 
-# note
-RUN pip3 install transformers huggingface_hub tokenizers datasets gradio diffusers bitsandbytes optimum accelerate deepspeed transformer-engine
-
-
-# for MLOPs
-RUN pip3 install -U wandb mlflow minio
-
-
-# ─── User ─────────────────────────────────────────────────────────────────────
+# =============================================================================
+# User Setup
+# =============================================================================
 
 ARG USERNAME=rose
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-# Create the user
-# If the specified UID/GID is already occupied by an existing user/group, remove it first
+# ─── Create user ─────────────────────────────────────────────────────────────
+
 RUN existing_user=$(getent passwd $USER_UID | cut -d: -f1); \
     if [ -n "$existing_user" ]; then \
         home_dir=$(getent passwd $USER_UID | cut -d: -f6); \
@@ -68,13 +60,16 @@ RUN existing_user=$(getent passwd $USER_UID | cut -d: -f1); \
     && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME \
-    && rm -rf /var/lib/apt/lists/*
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Zsh
+# ─── Set default shell to Zsh ────────────────────────────────────────────────
+
 RUN sudo chsh -s /bin/zsh $USERNAME
 
-# ohmyzsh and vimrc (installed for user rose)
+# =============================================================================
+# Developer Experience (ohmyzsh + vimrc)
+# =============================================================================
+
 USER $USERNAME
 RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O -)" "" --unattended \
     && git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions \
@@ -91,9 +86,16 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
     && sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/g' ~/.bashrc \
     && mkdir -p ~/.vscode-server/data/Machine
 
-# Code Server (browser-based VS Code) — system-wide install
+# =============================================================================
+# Code Server (Browser-based VS Code)
+# =============================================================================
+
+# ─── Install system-wide ──────────────────────────────────────────────────────
+
 USER root
 RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# ─── Configure ────────────────────────────────────────────────────────────────
 
 USER $USERNAME
 RUN mkdir -p ~/.config/code-server \
@@ -101,11 +103,15 @@ RUN mkdir -p ~/.config/code-server \
     && echo 'auth: none' >> ~/.config/code-server/config.yaml \
     && echo 'cert: false' >> ~/.config/code-server/config.yaml
 
-# VS Code extensions (for user rose)
+# ─── Install extensions ───────────────────────────────────────────────────────
+
 RUN code-server --install-extension ms-python.python \
     && code-server --install-extension aaron-bond.better-comments \
     && code-server --install-extension MS-CEINTL.vscode-language-pack-zh-hans
 
-# ─── cleanup ─────────────────────────────────────────────────────────────────
+# =============================================================================
+# Cleanup
+# =============================================================================
+
 USER root
-RUN pip cache purge && rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
+RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
