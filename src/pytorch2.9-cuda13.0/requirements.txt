@@ -4,12 +4,20 @@ matplotlib
 notebook
 numpy
 opencv-contrib-python
-pandas
+Pillow
+PyYAML
+requests
 scipy
-seaborn
-tifffile
-timm
 tqdm
+thop
+psutil
+tifffile
+albumentations
+einops
+timm
+efficientnet-pytorch
+pandas
+seaborn
 prophet
 xgboost
 scikit-learn
@@ -18,7 +26,6 @@ transformers
 huggingface_hub
 tokenizers
 datasets
-gradio
 diffusers
 bitsandbytes
 optimum
@@ -28,3 +35,4 @@ transformer-engine
 wandb
 mlflow
 minio
+gradio
