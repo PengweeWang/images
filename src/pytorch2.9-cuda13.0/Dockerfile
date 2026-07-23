@@ -38,6 +38,13 @@ RUN pip3 install -r /tmp/requirements.txt \
     && pip cache purge \
     && rm -f /tmp/requirements.txt
 
+# ─── LLaMA Factory ───────────────────────────────────────────────────────────
+
+RUN git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /tmp/LlamaFactory \
+    && cd /tmp/LlamaFactory \
+    && pip install -e . \
+    && pip install -r requirements/metrics.txt \
+    && rm -rf /tmp/LlamaFactory
 
 # =============================================================================
 # User Setup
