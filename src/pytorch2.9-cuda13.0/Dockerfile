@@ -20,6 +20,8 @@ RUN apt update -y && \
     git-lfs \
     sudo \
     zsh \
+    nodejs \
+    npm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -85,29 +87,6 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
     && echo '' >> ~/.zshrc\
     && sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/g' ~/.bashrc \
     && mkdir -p ~/.vscode-server/data/Machine
-
-# =============================================================================
-# Code Server (Browser-based VS Code)
-# =============================================================================
-
-# ─── Install system-wide ──────────────────────────────────────────────────────
-
-USER root
-RUN curl -fsSL https://code-server.dev/install.sh | sh
-
-# ─── Configure ────────────────────────────────────────────────────────────────
-
-USER $USERNAME
-RUN mkdir -p ~/.config/code-server \
-    && echo 'bind-addr: 0.0.0.0:7568' > ~/.config/code-server/config.yaml \
-    && echo 'auth: none' >> ~/.config/code-server/config.yaml \
-    && echo 'cert: false' >> ~/.config/code-server/config.yaml
-
-# ─── Install extensions ───────────────────────────────────────────────────────
-
-RUN code-server --install-extension ms-python.python \
-    && code-server --install-extension aaron-bond.better-comments \
-    && code-server --install-extension MS-CEINTL.vscode-language-pack-zh-hans
 
 # =============================================================================
 # Cleanup
