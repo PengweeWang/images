@@ -42,7 +42,7 @@ RUN pip3 install -r /tmp/requirements.txt \
 
 RUN git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /tmp/LlamaFactory \
     && cd /tmp/LlamaFactory \
-    && pip install -e . \
+    && pip install . \
     && pip install -r requirements/metrics.txt \
     && rm -rf /tmp/LlamaFactory
 
