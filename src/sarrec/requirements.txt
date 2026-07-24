@@ -2,7 +2,8 @@ imageio
 jupyterlab
 matplotlib
 notebook
-numpy
+numpy<2.0.0
+pyarrow<18.0.0a0
 opencv-contrib-python
 Pillow
 PyYAML
