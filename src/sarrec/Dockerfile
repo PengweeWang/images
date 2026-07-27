@@ -42,8 +42,8 @@ RUN PIP_CONSTRAINT= pip3 install --no-cache-dir -r /tmp/requirements.txt \
 RUN mkdir -p /work \
     && git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /work/LlamaFactory \
     && cd /work/LlamaFactory \
-    && pip install -e . \
-    && pip install -r requirements/metrics.txt
+    && PIP_CONSTRAINT= pip install -e . \
+    && PIP_CONSTRAINT= pip install -r requirements/metrics.txt
 
 # =============================================================================
 # User Setup
