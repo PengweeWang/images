@@ -35,7 +35,7 @@ mlflow
 minio
 gradio
 deepspeed==0.15.4
-transformers==4.49.0
+transformers
 trl==0.17.0
 liger-kernel==0.5.2
 hf-transfer==0.1.9

@@ -2,7 +2,7 @@
 # Base Image
 # =============================================================================
 
-FROM nvcr.io/nvidia/pytorch:24.11-py3
+FROM nvcr.io/nvidia/pytorch:25.03-py3
 ENV DEBIAN_FRONTEND=noninteractive
 
 # =============================================================================
