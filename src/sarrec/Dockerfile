@@ -33,9 +33,9 @@ RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 # Python Packages
 # =============================================================================
 
-COPY requirements.txt /tmp/requirements.txt
-RUN PIP_CONSTRAINT= pip3 install --no-cache-dir -r /tmp/requirements.txt \
-    && rm -f /tmp/requirements.txt
+# COPY requirements.txt /tmp/requirements.txt
+# RUN PIP_CONSTRAINT= pip3 install --no-cache-dir -r /tmp/requirements.txt \
+#     && rm -f /tmp/requirements.txt
 
 # ─── LLaMA Factory ───────────────────────────────────────────────────────────
 
@@ -43,7 +43,8 @@ RUN mkdir -p /work \
     && git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /work/LlamaFactory \
     && cd /work/LlamaFactory \
     && PIP_CONSTRAINT= pip install -e . \
-    && PIP_CONSTRAINT= pip install -r requirements/metrics.txt
+    && PIP_CONSTRAINT= pip install -r requirements/metrics.txt 
+    
 
 # =============================================================================
 # User Setup
@@ -64,7 +65,7 @@ RUN existing_user=$(getent passwd $USER_UID | cut -d: -f1); \
     && existing_group=$(getent group $USER_GID | cut -d: -f1); \
     if [ -n "$existing_group" ]; then \
         groupdel "$existing_group"; \
-    fi \
+    fi \    
     && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
@@ -123,4 +124,5 @@ RUN code-server --install-extension ms-python.python \
 # =============================================================================
 
 USER root
-RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
+RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip \
+    && sudo chown -R $USERNAME:$USER_GID /work
