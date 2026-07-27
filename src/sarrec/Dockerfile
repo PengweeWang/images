@@ -34,7 +34,7 @@ RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
 # =============================================================================
 
 COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt \
+RUN PIP_CONSTRAINT= pip3 install --no-cache-dir -r /tmp/requirements.txt \
     && rm -f /tmp/requirements.txt
 
 # ─── LLaMA Factory ───────────────────────────────────────────────────────────
