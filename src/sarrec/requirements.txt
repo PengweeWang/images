@@ -25,7 +25,7 @@ scikit-learn
 scikit-image
 huggingface_hub
 tokenizers
-datasets
+datasets<4.0.0
 diffusers
 bitsandbytes
 optimum
