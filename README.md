@@ -7,6 +7,7 @@
 | `aigis-dev` | ubuntu22.04 devcontainer | aigis | 通用 Python/Node.js 开发环境 |
 | `aigis-inside` | 基于 aigis-dev | aigis | 浏览器 IDE（Code Server）远程开发 |
 | `pytorch2.9-cuda13.0` | nvcr.io/nvidia/pytorch:25.10-py3 | rose | PyTorch 2.9 深度学习训练推理 |
+| `pytorch2.11-cuda12.8` | pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel | rose | PyTorch 2.11 深度学习与微调训练 |
 | `llamafactory` | nvcr.io/nvidia/pytorch:25.03-py3 | rose | LLaMA Factory 微调训练专用 |
 
 ---
@@ -65,6 +66,17 @@
 
 ---
 
+## `pytorch2.11-cuda12.8` — PyTorch 2.11 官方基础开发镜像
+
+- **基础**: `pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel` | **CUDA**: 12.8 | **用户**: `rose`
+- **系统**: vim, wget, git-lfs, ffmpeg, build-essential, zsh
+- **深度学习**: 官方 PyTorch 2.11 + torchvision + torchaudio 官方预装环境
+- **包输出**: 镜像构建阶段输出官方基础镜像内所有已安装的 pip 包列表 (`pip list`)
+- **Shell**: Oh My Zsh (ys 主题, zsh-autosuggestions/syntax-highlighting/completions) + amix/vimrc
+- **场景**: PyTorch 2.11 官方纯净环境检测与容器交互式开发
+
+---
+
 ## 构建与运行
 
 ```bash
@@ -72,12 +84,14 @@
 docker build -t aigis-dev src/aigis-dev
 docker build -t aigis-inside src/aigis-inside
 docker build -t pytorch2.9-cuda13.0 src/pytorch2.9-cuda13.0
-docker build -t llamafactory src/LlamaFactory
+docker build -t pytorch2.11-cuda12.8 src/pytorch2.11-cuda12.8
+docker build -t llamafactory src/llamafactory-dev
 
 # 运行
 docker run -it --rm -v "$(pwd):/workspace" aigis-dev
 docker run -it --rm -p 7568:7568 -v "$(pwd):/work" aigis-inside
 docker run -it --rm --gpus all -p 7568:7568 -v "$(pwd):/work" pytorch2.9-cuda13.0
+docker run -it --rm --gpus all -v "$(pwd):/workspace" pytorch2.11-cuda12.8
 docker run -it --rm --gpus all -p 6584:6584 -v "$(pwd):/work" llamafactory
 ```
 

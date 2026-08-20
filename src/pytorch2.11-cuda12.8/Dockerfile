@@ -2,15 +2,15 @@
 # Base Image
 # =============================================================================
 
-FROM nvcr.io/nvidia/pytorch:25.03-py3
+FROM pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel
 ENV DEBIAN_FRONTEND=noninteractive
 
 # =============================================================================
 # System Dependencies
 # =============================================================================
 
-RUN apt update -y && \
-    apt install -y --no-install-recommends \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
     vim \
     ffmpeg \
     wget \
@@ -20,32 +20,20 @@ RUN apt update -y && \
     git-lfs \
     sudo \
     zsh \
-    nodejs \
-    npm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# ─── Remove pip externally-managed restriction ────────────────────────────────
+# ─── Remove pip externally-managed restriction (if present) ──────────────────
 
-RUN rm -rf /usr/lib/python3.12/EXTERNALLY-MANAGED
+RUN rm -rf /usr/lib/python3*/EXTERNALLY-MANAGED 2>/dev/null || true
 
-# =============================================================================
-# Python Packages
-# =============================================================================
+# ─── Print all pre-installed pip packages in base image during build ─────────
 
-# ─── LLaMA Factory ───────────────────────────────────────────────────────────
-
-RUN mkdir -p /work \
-    && git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /work/LlamaFactory \
-    && cd /work/LlamaFactory \
-    && PIP_CONSTRAINT= pip install -e . \
-    && PIP_CONSTRAINT= pip install -r requirements/metrics.txt 
-
-# ─── Torchaudio & DeepSpeed ──────────────────────────────────────────────────
-
-RUN PIP_CONSTRAINT= pip uninstall -y torchaudio \
-    && pip install --no-cache-dir torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128 --no-deps \
-    && pip install --no-cache-dir deepspeed
+RUN echo "=================================================================" \
+    && echo "             BASE IMAGE PRE-INSTALLED PIP PACKAGES               " \
+    && echo "=================================================================" \
+    && pip list --format=columns \
+    && echo "================================================================="
 
 # =============================================================================
 # User Setup
@@ -66,7 +54,7 @@ RUN existing_user=$(getent passwd $USER_UID | cut -d: -f1); \
     && existing_group=$(getent group $USER_GID | cut -d: -f1); \
     if [ -n "$existing_group" ]; then \
         groupdel "$existing_group"; \
-    fi \    
+    fi \
     && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
@@ -91,39 +79,14 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
     && sh ~/.vim_runtime/install_awesome_vimrc.sh \
     && echo 'set mouse-=a' >> ~/.vim_runtime/my_configs.vim \
     && echo '' >> ~/.zshrc \
-    && echo 'setopt no_nomatch # disable * match' >> ~/.zshrc\
-    && echo '' >> ~/.zshrc\
+    && echo 'setopt no_nomatch # disable * match' >> ~/.zshrc \
+    && echo '' >> ~/.zshrc \
     && sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/g' ~/.bashrc \
     && mkdir -p ~/.vscode-server/data/Machine
-
-# =============================================================================
-# Code Server (Browser-based VS Code)
-# =============================================================================
-
-# ─── Install system-wide ──────────────────────────────────────────────────────
-
-USER root
-RUN curl -fsSL https://code-server.dev/install.sh | sh
-
-# ─── Configure ────────────────────────────────────────────────────────────────
-
-USER $USERNAME
-RUN mkdir -p ~/.config/code-server \
-    && echo 'bind-addr: 0.0.0.0:6584' > ~/.config/code-server/config.yaml \
-    && echo 'auth: none' >> ~/.config/code-server/config.yaml \
-    && echo 'cert: false' >> ~/.config/code-server/config.yaml
-
-# ─── Install extensions ───────────────────────────────────────────────────────
-
-RUN code-server --install-extension ms-python.python \
-    && code-server --install-extension aaron-bond.better-comments \
-    && code-server --install-extension MS-CEINTL.vscode-language-pack-zh-hans
-
 
 # =============================================================================
 # Cleanup
 # =============================================================================
 
 USER root
-RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip \
-    && sudo chown -R $USERNAME:$USER_GID /work
+RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
