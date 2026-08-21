@@ -8,7 +8,7 @@
 | `aigis-inside` | 基于 aigis-dev | aigis | 浏览器 IDE（Code Server）远程开发 |
 | `pytorch2.9-cuda13.0` | nvcr.io/nvidia/pytorch:25.10-py3 | rose | PyTorch 2.9 深度学习训练推理 |
 | `pytorch2.11-cuda12.8` | pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel | rose | PyTorch 2.11 深度学习与微调训练 |
-| `llamafactory` | nvcr.io/nvidia/pytorch:25.03-py3 | rose | LLaMA Factory 微调训练专用 |
+| `llamafactory` | pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel | rose | LLaMA Factory 微调训练专用 |
 
 ---
 
@@ -52,13 +52,10 @@
 
 ## `llamafactory` — LLaMA Factory 微调训练镜像
 
-- **基础**: `nvcr.io/nvidia/pytorch:25.03-py3` | **Ubuntu**: 24.04 | **CUDA**: 12.8 | **Python**: 3.12 | **用户**: `rose`
+- **基础**: `pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel` | **CUDA**: 12.8 | **用户**: `rose`
 - **系统**: vim, wget, git-lfs, ffmpeg, build-essential, nodejs, npm
-- **深度学习**: NGC 预装 PyTorch 2.7.0a0 + torchvision + torchaudio
+- **深度学习**: 官方预装 PyTorch 2.11 + torchvision + torchaudio, deepspeed
 - **LLaMA Factory**: 源码克隆至 `/work/LlamaFactory` 并以可编辑模式 (`-e`) 安装，包含 metrics 依赖
-- **数据/ML**: numpy/pandas/scipy, matplotlib/opencv, scikit-learn/image, prophet/xgboost, jupyterlab/notebook, gradio
-- **MLOps**: wandb, mlflow, minio
-- **LLM 生态**: transformers, diffusers, trl, bitsandbytes, deepspeed, accelerate, flash-attn, liger-kernel
 - **Shell**: Oh My Zsh + amix/vimrc + Code Server (6584)
 - **VS Code 扩展**: Python, Better Comments, 中文语言包
 - **场景**: LLaMA Factory 大模型微调训练、RLHF/DPO、模型评估
@@ -96,3 +93,5 @@ docker run -it --rm --gpus all -p 6584:6584 -v "$(pwd):/work" llamafactory
 ```
 
 > **端口说明**: `aigis-inside` 和 `pytorch2.9-cuda13.0` 的 Code Server 监听 7568 端口，`llamafactory` 监听 6584 端口，避免本地端口冲突。
+>
+> **CI/CD 包清单导出**: 若需在 GitHub Actions 构建时导出镜像内的 Python 包清单并生成 Markdown 表格与 Artifact，只需在对应镜像目录中放置 `.list-packages` 文件。

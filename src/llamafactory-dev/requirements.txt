@@ -2,16 +2,11 @@ imageio
 jupyterlab
 matplotlib
 notebook
-numpy
 pyarrow
 opencv-contrib-python
-Pillow
-PyYAML
-requests
 scipy
 tqdm
 thop
-psutil
 tifffile
 albumentations
 einops

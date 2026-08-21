@@ -77,27 +77,22 @@ jobs:
           image_matrix = []
           build_matrix = []
           for image_dir in image_dirs:
+              image_path = pathlib.Path(image_dir)
+              list_packages = (image_path / ".list-packages").is_file() or (image_path / "list-packages").is_file()
               image_entry = {
                   "image": pathlib.PurePosixPath(image_dir).relative_to("src").as_posix().replace("/", "-"),
                   "context": image_dir,
                   "dockerfile": f"{image_dir}/Dockerfile",
+                  "list_packages": list_packages,
               }
               image_matrix.append(image_entry)
-              build_matrix.extend(
-                  [
-                      {
-                          **image_entry,
-                          "platform": "linux/amd64",
-                          "platform_id": "amd64",
-                          "runner": "ubuntu-24.04",
-                      },
-                      {
-                          **image_entry,
-                          "platform": "linux/arm64",
-                          "platform_id": "arm64",
-                          "runner": "ubuntu-24.04-arm",
-                      },
-                  ]
+              build_matrix.append(
+                  {
+                      **image_entry,
+                      "platform": "linux/amd64",
+                      "platform_id": "amd64",
+                      "runner": "ubuntu-24.04",
+                  }
               )
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
@@ -168,6 +163,50 @@ jobs:
           path: /tmp/digests/${{ matrix.image }}/*
           if-no-files-found: error
           retention-days: 1
+
+      - name: Generate and publish Python packages markdown
+        if: matrix.list_packages == true
+        shell: bash
+        run: |
+          mkdir -p logs
+          docker run --rm --entrypoint "" ${{ steps.registry.outputs.image }}@${{ steps.build.outputs.digest }} python3 -c "
+          import json, os, subprocess
+          try:
+              pkgs = json.loads(subprocess.check_output(['pip', 'list', '--format=json']))
+              table_lines = [
+                  '### 📦 Python Packages for \`${{ matrix.image }}\`',
+                  f'> **Total Packages**: {len(pkgs)}\n',
+                  '| Package | Version |',
+                  '| :--- | :--- |'
+              ]
+              for p in sorted(pkgs, key=lambda x: x['name'].lower()):
+                  name = p['name']
+                  ver = p['version']
+                  table_lines.append(f'| \`{name}\` | {ver} |')
+              
+              markdown_content = '\n'.join(table_lines) + '\n'
+              
+              # 1. Output to GitHub Step Summary
+              summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+              if summary_path:
+                  with open(summary_path, 'a', encoding='utf-8') as f:
+                      f.write(markdown_content + '\n')
+              
+              # 2. Write to logs directory for artifact
+              with open('logs/${{ matrix.image }}-packages.md', 'w', encoding='utf-8') as f:
+                  f.write(f'# Python Packages: ${{ matrix.image }}\n\n' + markdown_content)
+          except Exception as e:
+              print(f'Warning: failed to extract python packages: {e}')
+          "
+
+      - name: Upload Packages Markdown Artifact
+        if: matrix.list_packages == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.image }}
+          path: logs/${{ matrix.image }}-packages.md
+          if-no-files-found: ignore
+          retention-days: 30
 
   merge-manifests:
     name: Merge Manifests (${{ matrix.image }})
