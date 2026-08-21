@@ -117,6 +117,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Free disk space on runner
+        shell: bash
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+          sudo docker builder prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Derive registry coordinates
         id: registry
         run: |
@@ -163,6 +179,12 @@ jobs:
           path: /tmp/digests/${{ matrix.image }}/*
           if-no-files-found: error
           retention-days: 1
+
+      - name: Prune builder cache before pull
+        if: matrix.list_packages == true
+        shell: bash
+        run: |
+          docker buildx prune --all --force || true
 
       - name: Generate and publish Python packages markdown
         if: matrix.list_packages == true
