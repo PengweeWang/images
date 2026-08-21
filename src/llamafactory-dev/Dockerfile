@@ -42,7 +42,7 @@ RUN mkdir -p /work \
     && pip install --no-cache-dir -e . \
     && pip install --no-cache-dir -r requirements/metrics.txt \
     && pip install --no-cache-dir -r requirements/deepspeed.txt \
-    && pip install --no-cache-dir -r requirements/vllm.txt
+    && pip install vllm --extra-index-url https://download.pytorch.org/whl/cu128
 
 # =============================================================================
 # User Setup

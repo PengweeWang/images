@@ -169,34 +169,44 @@ jobs:
         shell: bash
         run: |
           mkdir -p logs
-          docker run --rm --entrypoint "" ${{ steps.registry.outputs.image }}@${{ steps.build.outputs.digest }} python3 -c "
-          import json, os, subprocess
-          try:
-              pkgs = json.loads(subprocess.check_output(['pip', 'list', '--format=json']))
-              table_lines = [
-                  '### 📦 Python Packages for \`${{ matrix.image }}\`',
-                  f'> **Total Packages**: {len(pkgs)}\n',
-                  '| Package | Version |',
-                  '| :--- | :--- |'
-              ]
-              for p in sorted(pkgs, key=lambda x: x['name'].lower()):
-                  name = p['name']
-                  ver = p['version']
-                  table_lines.append(f'| \`{name}\` | {ver} |')
-              
-              markdown_content = '\n'.join(table_lines) + '\n'
-              
-              # 1. Output to GitHub Step Summary
-              summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
-              if summary_path:
-                  with open(summary_path, 'a', encoding='utf-8') as f:
-                      f.write(markdown_content + '\n')
-              
-              # 2. Write to logs directory for artifact
-              with open('logs/${{ matrix.image }}-packages.md', 'w', encoding='utf-8') as f:
-                  f.write(f'# Python Packages: ${{ matrix.image }}\n\n' + markdown_content)
-          except Exception as e:
-              print(f'Warning: failed to extract python packages: {e}')
+          # 1. 从容器内提取 pip 包清单 JSON
+          docker run --rm --entrypoint python3 "${{ steps.registry.outputs.image }}@${{ steps.build.outputs.digest }}" -m pip list --format=json --disable-pip-version-check > /tmp/pip_list.json
+
+          # 2. 在 Host 端生成 Markdown 并写入 GitHub Summary 和 logs 目录
+          python3 -c "
+          import json, os, re
+
+          with open('/tmp/pip_list.json', 'r', encoding='utf-8', errors='ignore') as f:
+              content = f.read()
+
+          match = re.search(r'\[\s*\{.*\}\s*\]', content, re.DOTALL)
+          if match:
+              pkgs = json.loads(match.group(0))
+          else:
+              pkgs = json.loads(content)
+
+          table_lines = [
+              '### 📦 Python Packages for \`${{ matrix.image }}\`',
+              f'> **Total Packages**: {len(pkgs)}\n',
+              '| Package | Version |',
+              '| :--- | :--- |'
+          ]
+          for p in sorted(pkgs, key=lambda x: x['name'].lower()):
+              name = p['name']
+              ver = p['version']
+              table_lines.append(f'| \`{name}\` | {ver} |')
+
+          markdown_content = '\n'.join(table_lines) + '\n'
+
+          # 写入 GitHub Step Summary (方案 1)
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a', encoding='utf-8') as f:
+                  f.write(markdown_content + '\n')
+
+          # 写入 Host logs 目录用于 Artifact 上传 (方案 2)
+          with open('logs/${{ matrix.image }}-packages.md', 'w', encoding='utf-8') as f:
+              f.write(f'# Python Packages: ${{ matrix.image }}\n\n' + markdown_content)
           "
 
       - name: Upload Packages Markdown Artifact
