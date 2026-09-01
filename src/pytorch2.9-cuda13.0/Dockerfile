@@ -38,14 +38,6 @@ RUN pip3 install -r /tmp/requirements.txt \
     && pip cache purge \
     && rm -f /tmp/requirements.txt
 
-# ─── LLaMA Factory ───────────────────────────────────────────────────────────
-
-RUN git clone --depth 1 https://github.com/hiyouga/LlamaFactory.git /tmp/LlamaFactory \
-    && cd /tmp/LlamaFactory \
-    && pip install . \
-    && pip install -r requirements/metrics.txt \
-    && rm -rf /tmp/LlamaFactory
-
 # =============================================================================
 # User Setup
 # =============================================================================
@@ -100,4 +92,4 @@ RUN sh -c "$(wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
 # =============================================================================
 
 USER root
-RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip
+RUN rm -rf /root/.cache/pip /home/$USERNAME/.cache/pip /workspace/*
