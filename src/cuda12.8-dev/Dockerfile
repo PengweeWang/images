@@ -35,6 +35,7 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
         cmake \
         curl \
         gh \
+        ssh \
         git \
         git-lfs \
         python3 \
