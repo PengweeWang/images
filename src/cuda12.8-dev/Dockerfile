@@ -11,6 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
     HOSTNAME=develop \
     SHELL=/bin/zsh \
+    HELIX_RUNTIME=/opt/helix/runtime \
     UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
 
 # =============================================================================
@@ -42,6 +43,7 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
         python-is-python3 \
         sudo \
         wget \
+        xz-utils \
         zsh \
     # ─── Remove externally-managed restriction for system pip ────────────────
     && rm -rf /usr/lib/python3*/EXTERNALLY-MANAGED 2>/dev/null || true \
@@ -52,6 +54,13 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
     # ─── Install Neovim (Latest Official Release) ────────────────────────────
     && curl -fsSL https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz \
         | tar -xz --strip-components=1 -C /usr/local \
+    # ─── Install Helix (Modern Modal Editor) ─────────────────────────────────
+    && HELIX_TAG=$(curl -sI https://github.com/helix-editor/helix/releases/latest | grep -i '^location:' | sed 's/.*tag\///' | tr -d '\r\n') \
+    && mkdir -p /opt/helix \
+    && curl -fsSL "https://github.com/helix-editor/helix/releases/download/${HELIX_TAG}/helix-${HELIX_TAG}-x86_64-linux.tar.xz" \
+        | tar -xJ --strip-components=1 -C /opt/helix \
+    && ln -sf /opt/helix/hx /usr/local/bin/hx \
+    && ln -sf /opt/helix/hx /usr/local/bin/helix \
     # ─── Install eza (Modern ls Replacement) ─────────────────────────────────
     && curl -fsSL https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-musl.tar.gz \
         | tar -xz -C /usr/local/bin \
@@ -107,7 +116,7 @@ RUN echo "develop" > /etc/hostname \
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/pip ~/.npm \
+RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/helix/themes ~/.config/pip ~/.npm \
     # ─── User level mirrors ──────────────────────────────────────────────────
     && printf '[[index]]\nurl = "https://mirrors.aliyun.com/pypi/simple"\ndefault = true\n' > ~/.config/uv/uv.toml \
     && printf '[global]\nindex-url = https://mirrors.aliyun.com/pypi/simple\ntrusted-host = mirrors.aliyun.com\n' > ~/.config/pip/pip.conf \
@@ -154,6 +163,26 @@ RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/pip ~/.npm \
         'vim.opt.signcolumn = "yes"' \
         'vim.opt.mouse = "a"' \
         'vim.opt.clipboard = "unnamedplus"' > ~/.config/nvim/init.lua \
+    # ─── Helix Catppuccin Theme & Configuration ──────────────────────────────
+    && git clone --depth=1 https://github.com/catppuccin/helix.git /tmp/catppuccin-helix \
+    && cp -r /tmp/catppuccin-helix/themes/default/* ~/.config/helix/themes/ \
+    && rm -rf /tmp/catppuccin-helix \
+    && printf '%s\n' \
+        'theme = "catppuccin_mocha"' \
+        '' \
+        '[editor]' \
+        'line-number = "relative"' \
+        'cursorline = true' \
+        'color-modes = true' \
+        'true-color = true' \
+        '' \
+        '[editor.cursor-shape]' \
+        'insert = "bar"' \
+        'normal = "block"' \
+        'select = "underline"' \
+        '' \
+        '[editor.indent-guides]' \
+        'render = true' > ~/.config/helix/config.toml \
     # ─── Clean user cache ────────────────────────────────────────────────────
     && rm -rf ~/.cache
 

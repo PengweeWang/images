@@ -81,6 +81,7 @@
 - **系统工具**: sudo (免密), git, git-lfs, gh (GitHub CLI), curl, wget, cmake, build-essential, zsh
 - **现代化 CLI**:
   - `neovim`: 官方最新稳定版，集成 Catppuccin-Mocha 主题与常用编程配置
+  - `helix (hx)`: 现代化多模态文本编辑器，预装并配置 Catppuccin-Mocha 官方主题与优雅编辑设置
   - `uv`: 官方二进制快速安装，内置阿里云 PyPI 镜像源
   - `eza`: 现代化替代 ls，支持图标与 git 状态展示
   - `nodejs`: 22.x LTS (NodeSource)，内置淘宝 npmmirror 镜像源
