@@ -1,11 +1,12 @@
 # Docker Images
 
-该项目维护四个 Docker 开发镜像。
+该项目维护多个 Docker 开发镜像。
 
 | 镜像 | 基础镜像 | 用户 | 核心用途 |
 |------|----------|------|----------|
 | `aigis-dev` | ubuntu22.04 devcontainer | aigis | 通用 Python/Node.js 开发环境 |
 | `aigis-inside` | 基于 aigis-dev | aigis | 浏览器 IDE（Code Server）远程开发 |
+| `cuda12.8-dev` | nvidia/cuda:12.8.0-devel-ubuntu24.04 | user | 极简基础 CUDA 12.8 深度学习研究环境 |
 | `pytorch2.9-cuda13.0` | nvcr.io/nvidia/pytorch:25.10-py3 | rose | PyTorch 2.9 深度学习训练推理 |
 | `pytorch2.11-cuda12.8` | pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel | rose | PyTorch 2.11 深度学习与微调训练 |
 | `llamafactory` | pytorch/pytorch:2.11.0-cuda12.8-cudnn9-devel | rose | LLaMA Factory 微调训练专用 |
@@ -74,12 +75,30 @@
 
 ---
 
+## `cuda12.8-dev` — 基础 CUDA 12.8 深度学习研究镜像
+
+- **基础**: `nvidia/cuda:12.8.0-devel-ubuntu24.04` | **CUDA**: 12.8 | **用户**: `user` | **主机名**: `develop`
+- **系统工具**: sudo (免密), git, git-lfs, curl, wget, cmake, build-essential, zsh
+- **现代化 CLI**:
+  - `neovim`: 官方最新稳定版，集成 Catppuccin-Mocha 主题与常用编程配置
+  - `uv`: 官方二进制快速安装，内置阿里云 PyPI 镜像源
+  - `eza`: 现代化替代 ls，支持图标与 git 状态展示
+  - `nodejs`: 22.x LTS (NodeSource)，内置淘宝 npmmirror 镜像源
+  - `tatr`: Tsoding 任务管理工具（Task Tracker），编译安装至 `/usr/local/bin/tatr`
+  - `starship`: 预设 `catppuccin-powerline` 风格提示符，支持主机名与多语言环境显示
+- **Python 环境**: Python 3.12 + pip，已移除系统 `EXTERNALLY-MANAGED` 限制，支持全局与虚拟环境极速安装
+- **Shell**: Oh My Zsh 配合 `git`, `sudo`, `zsh-autosuggestions`, `zsh-syntax-highlighting`, `zsh-completions` 插件
+- **场景**: 极简、无冗余、纯净的 CUDA 12.8 深度学习研究与算子开发环境
+
+---
+
 ## 构建与运行
 
 ```bash
 # 构建
 docker build -t aigis-dev src/aigis-dev
 docker build -t aigis-inside src/aigis-inside
+docker build -t cuda12.8-dev src/cuda12.8-dev
 docker build -t pytorch2.9-cuda13.0 src/pytorch2.9-cuda13.0
 docker build -t pytorch2.11-cuda12.8 src/pytorch2.11-cuda12.8
 docker build -t llamafactory src/llamafactory-dev
@@ -87,6 +106,7 @@ docker build -t llamafactory src/llamafactory-dev
 # 运行
 docker run -it --rm -v "$(pwd):/workspace" aigis-dev
 docker run -it --rm -p 7568:7568 -v "$(pwd):/work" aigis-inside
+docker run -it --rm --gpus all -h develop -v "$(pwd):/workspace" cuda12.8-dev
 docker run -it --rm --gpus all -p 7568:7568 -v "$(pwd):/work" pytorch2.9-cuda13.0
 docker run -it --rm --gpus all -v "$(pwd):/workspace" pytorch2.11-cuda12.8
 docker run -it --rm --gpus all -p 6584:6584 -v "$(pwd):/work" llamafactory
@@ -95,3 +115,4 @@ docker run -it --rm --gpus all -p 6584:6584 -v "$(pwd):/work" llamafactory
 > **端口说明**: `aigis-inside` 和 `pytorch2.9-cuda13.0` 的 Code Server 监听 7568 端口，`llamafactory` 监听 6584 端口，避免本地端口冲突。
 >
 > **CI/CD 包清单导出**: 若需在 GitHub Actions 构建时导出镜像内的 Python 包清单并生成 Markdown 表格与 Artifact，只需在对应镜像目录中放置 `.list-packages` 文件。
+
