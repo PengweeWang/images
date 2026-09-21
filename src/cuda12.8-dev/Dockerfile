@@ -23,11 +23,17 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
         sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list && \
         sed -i 's|http://security.ubuntu.com/ubuntu/|https://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list; \
     fi \
+    && (mkdir -p -m 755 /etc/apt/keyrings \
+        && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+        && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+        || true) \
     && apt-get update -y && apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
         cmake \
         curl \
+        gh \
         git \
         git-lfs \
         python3 \
@@ -115,7 +121,7 @@ RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/pip ~/.npm \
     && (starship preset catppuccin-powerline -o ~/.config/starship.toml 2>/dev/null \
         || curl -fsSL https://raw.githubusercontent.com/starship/starship/master/docs/public/presets/toml/catppuccin-powerline.toml -o ~/.config/starship.toml) \
     # ─── Configure .zshrc ────────────────────────────────────────────────────
-    && sed -i 's/plugins=(git)/plugins=(git sudo zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/g' ~/.zshrc \
+    && sed -i 's/plugins=(git)/plugins=(git sudo gh zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/g' ~/.zshrc \
     && echo '' >> ~/.zshrc \
     && echo '# Modern CLI aliases' >> ~/.zshrc \
     && echo 'alias ls="eza"' >> ~/.zshrc \

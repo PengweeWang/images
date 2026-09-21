@@ -78,7 +78,7 @@
 ## `cuda12.8-dev` — 基础 CUDA 12.8 深度学习研究镜像
 
 - **基础**: `nvidia/cuda:12.8.0-devel-ubuntu24.04` | **CUDA**: 12.8 | **用户**: `user` | **主机名**: `develop`
-- **系统工具**: sudo (免密), git, git-lfs, curl, wget, cmake, build-essential, zsh
+- **系统工具**: sudo (免密), git, git-lfs, gh (GitHub CLI), curl, wget, cmake, build-essential, zsh
 - **现代化 CLI**:
   - `neovim`: 官方最新稳定版，集成 Catppuccin-Mocha 主题与常用编程配置
   - `uv`: 官方二进制快速安装，内置阿里云 PyPI 镜像源
