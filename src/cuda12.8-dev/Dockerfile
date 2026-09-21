@@ -114,9 +114,6 @@ RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/pip ~/.npm \
     # ─── Configure Starship with Catppuccin Powerline Preset ─────────────────
     && (starship preset catppuccin-powerline -o ~/.config/starship.toml 2>/dev/null \
         || curl -fsSL https://raw.githubusercontent.com/starship/starship/master/docs/public/presets/toml/catppuccin-powerline.toml -o ~/.config/starship.toml) \
-    # Add hostname support for develop to starship prompt
-    && sed -i 's/\$username\\/\$username\\\n\$hostname\\/g' ~/.config/starship.toml \
-    && printf '\n[hostname]\nssh_only = false\nstyle = "bg:red fg:crust"\nformat = "[@$hostname]($style)"\n' >> ~/.config/starship.toml \
     # ─── Configure .zshrc ────────────────────────────────────────────────────
     && sed -i 's/plugins=(git)/plugins=(git sudo zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/g' ~/.zshrc \
     && echo '' >> ~/.zshrc \
