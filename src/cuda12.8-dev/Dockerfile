@@ -9,6 +9,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
+    TZ=Asia/Shanghai \
     HOSTNAME=develop \
     SHELL=/bin/zsh \
     HELIX_RUNTIME=/opt/helix/runtime \
@@ -43,9 +44,13 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
         python3-pip \
         python-is-python3 \
         sudo \
+        tzdata \
         wget \
         xz-utils \
         zsh \
+    # ─── Configure Timezone (Asia/Shanghai) ──────────────────────────────────
+    && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone \
     # ─── Remove externally-managed restriction for system pip ────────────────
     && rm -rf /usr/lib/python3*/EXTERNALLY-MANAGED 2>/dev/null || true \
     # ─── Install Node.js & Set China Mirror ──────────────────────────────────
@@ -130,6 +135,11 @@ RUN mkdir -p ~/.config/uv ~/.config/nvim ~/.config/helix/themes ~/.config/pip ~/
     # ─── Configure Starship with Catppuccin Powerline Preset ─────────────────
     && (starship preset catppuccin-powerline -o ~/.config/starship.toml 2>/dev/null \
         || curl -fsSL https://raw.githubusercontent.com/starship/starship/master/docs/public/presets/toml/catppuccin-powerline.toml -o ~/.config/starship.toml) \
+    && sed -i '/^\[time\]/,/^disabled/ s/disabled = false/disabled = true/' ~/.config/starship.toml \
+    && sed -i 's/show_milliseconds = true/show_milliseconds = false/g' ~/.config/starship.toml \
+    && sed -i 's/\[\](fg:sapphire bg:lavender)\\//g' ~/.config/starship.toml \
+    && sed -i 's/\$time\\//g' ~/.config/starship.toml \
+    && sed -i 's/\[ \](fg:lavender)/\[ \](fg:sapphire)/g' ~/.config/starship.toml \
     # ─── Configure .zshrc ────────────────────────────────────────────────────
     && sed -i 's/plugins=(git)/plugins=(git sudo gh zsh-autosuggestions zsh-syntax-highlighting zsh-completions)/g' ~/.zshrc \
     && echo '' >> ~/.zshrc \
