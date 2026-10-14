@@ -1,7 +1,7 @@
 # =============================================================================
 # Base Image: Clean CUDA 12.8 Development Environment (Ubuntu 24.04)
 # =============================================================================
-FROM nvidia/cuda:12.8.0-devel-ubuntu24.04
+FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu24.04
 
 # Multi-stage copy for uv & uvx (fastest, cleanest official binary method)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
