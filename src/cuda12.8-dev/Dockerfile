@@ -4,7 +4,31 @@
 FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu24.04
 
 # Multi-stage copy for uv & uvx (fastest, cleanest official binary method)
+# Note: ghcr.io/astral-sh/uv:latest is a multi-arch manifest (amd64/arm64), so the
+# matching architecture is selected automatically by the builder.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# =============================================================================
+# Target Architecture Detection (amd64 / arm64)
+# =============================================================================
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+        amd64) \
+            echo 'NVIM_ARCH=x86_64' > /etc/arch.env; \
+            echo 'HELIX_ARCH=x86_64' >> /etc/arch.env; \
+            echo 'EZA_FILE=eza_x86_64-unknown-linux-musl.tar.gz' >> /etc/arch.env; \
+            ;; \
+        arm64) \
+            echo 'NVIM_ARCH=arm64' > /etc/arch.env; \
+            echo 'HELIX_ARCH=aarch64' >> /etc/arch.env; \
+            echo 'EZA_FILE=eza_aarch64-unknown-linux-gnu.tar.gz' >> /etc/arch.env; \
+            ;; \
+        *) \
+            echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1; \
+            ;; \
+    esac; \
+    cat /etc/arch.env
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -18,7 +42,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # =============================================================================
 # System Dependencies & Tools
 # =============================================================================
-RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+RUN . /etc/arch.env && \
+    if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
         sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources && \
         sed -i 's|http://security.ubuntu.com/ubuntu/|https://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources; \
     elif [ -f /etc/apt/sources.list ]; then \
@@ -58,17 +83,17 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
     && apt-get install -y --no-install-recommends nodejs \
     && npm config set registry https://registry.npmmirror.com --global \
     # ─── Install Neovim (Latest Official Release) ────────────────────────────
-    && curl -fsSL https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz \
+    && curl -fsSL "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${NVIM_ARCH}.tar.gz" \
         | tar -xz --strip-components=1 -C /usr/local \
     # ─── Install Helix (Modern Modal Editor) ─────────────────────────────────
     && HELIX_TAG=$(curl -sI https://github.com/helix-editor/helix/releases/latest | grep -i '^location:' | sed 's/.*tag\///' | tr -d '\r\n') \
     && mkdir -p /opt/helix \
-    && curl -fsSL "https://github.com/helix-editor/helix/releases/download/${HELIX_TAG}/helix-${HELIX_TAG}-x86_64-linux.tar.xz" \
+    && curl -fsSL "https://github.com/helix-editor/helix/releases/download/${HELIX_TAG}/helix-${HELIX_TAG}-${HELIX_ARCH}-linux.tar.xz" \
         | tar -xJ --strip-components=1 -C /opt/helix \
     && ln -sf /opt/helix/hx /usr/local/bin/hx \
     && ln -sf /opt/helix/hx /usr/local/bin/helix \
     # ─── Install eza (Modern ls Replacement) ─────────────────────────────────
-    && curl -fsSL https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-musl.tar.gz \
+    && curl -fsSL "https://github.com/eza-community/eza/releases/latest/download/${EZA_FILE}" \
         | tar -xz -C /usr/local/bin \
     && chmod +x /usr/local/bin/eza \
     # ─── Install Starship Prompt ─────────────────────────────────────────────

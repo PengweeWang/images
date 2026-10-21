@@ -76,6 +76,19 @@ jobs:
 
           image_matrix = []
           build_matrix = []
+          # 构建平台矩阵：x86_64 与 ARM64(原生 runner,无需模拟)
+          platforms = [
+              {
+                  "platform": "linux/amd64",
+                  "platform_id": "amd64",
+                  "runner": "ubuntu-24.04",
+              },
+              {
+                  "platform": "linux/arm64",
+                  "platform_id": "arm64",
+                  "runner": "ubuntu-24.04-arm",
+              },
+          ]
           for image_dir in image_dirs:
               image_path = pathlib.Path(image_dir)
               list_packages = (image_path / ".list-packages").is_file() or (image_path / "list-packages").is_file()
@@ -86,14 +99,13 @@ jobs:
                   "list_packages": list_packages,
               }
               image_matrix.append(image_entry)
-              build_matrix.append(
-                  {
-                      **image_entry,
-                      "platform": "linux/amd64",
-                      "platform_id": "amd64",
-                      "runner": "ubuntu-24.04",
-                  }
-              )
+              for platform_entry in platforms:
+                  build_matrix.append(
+                      {
+                          **image_entry,
+                          **platform_entry,
+                      }
+                  )
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               print(f"build_matrix={json.dumps(build_matrix)}", file=output)
@@ -123,12 +135,18 @@ jobs:
         run: |
           echo "=== Disk space before cleanup ==="
           df -h
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/share/swift
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # x64 runner images
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
+          # arm64 runner images
+          sudo rm -rf /usr/lib/jvm || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /opt/hostedtoolcache || true
+          sudo rm -rf /usr/local/share/gradle || true
           sudo docker image prune --all --force || true
           sudo docker builder prune --all --force || true
           echo "=== Disk space after cleanup ==="
@@ -228,16 +246,16 @@ jobs:
                   f.write(markdown_content + '\n')
 
           # 写入 Host logs 目录用于 Artifact 上传 (方案 2)
-          with open('logs/${{ matrix.image }}-packages.md', 'w', encoding='utf-8') as f:
-              f.write(f'# Python Packages: ${{ matrix.image }}\n\n' + markdown_content)
+          with open('logs/${{ matrix.image }}-${{ matrix.platform_id }}-packages.md', 'w', encoding='utf-8') as f:
+              f.write(f'# Python Packages: ${{ matrix.image }} (${{ matrix.platform_id }})\n\n' + markdown_content)
           "
 
       - name: Upload Packages Markdown Artifact
         if: matrix.list_packages == true
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.image }}
-          path: logs/${{ matrix.image }}-packages.md
+          name: packages-${{ matrix.image }}-${{ matrix.platform_id }}
+          path: logs/${{ matrix.image }}-${{ matrix.platform_id }}-packages.md
           if-no-files-found: ignore
           retention-days: 30
 
@@ -320,3 +338,26 @@ jobs:
         run: |
           first_tag=$(jq -r '.tags[0]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
           docker buildx imagetools inspect "$first_tag"
+
+      - name: Verify multi-arch manifest list
+        working-directory: /tmp/digests/${{ matrix.image }}
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          set -euo pipefail
+          first_tag=$(jq -r '.tags[0]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          platforms=$(docker buildx imagetools inspect --raw "$first_tag" \
+            | jq -r '.manifests[]?.platform | "\(.os)/\(.architecture)"' | sort -u)
+          echo "Platforms in $first_tag:"
+          echo "$platforms"
+          missing=""
+          for expected in linux/amd64 linux/arm64; do
+            if ! grep -qx "$expected" <<< "$platforms"; then
+              missing="$missing $expected"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Manifest list is missing platform(s):$missing"
+            exit 1
+          fi
+          echo "All expected platforms are present."
