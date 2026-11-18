@@ -5,6 +5,7 @@
 | 镜像 | 基础镜像 | 架构 | 用户 | 核心用途 |
 |------|----------|------|------|----------|
 | `cuda12.8-dev` | nvidia/cuda:12.8.0-cudnn-devel-ubuntu24.04 | amd64 / arm64 | user | 极简基础 CUDA 12.8 深度学习研究环境 |
+| `pulp-ui` | node:24-alpine → nginxinc/nginx-unprivileged:1.28-alpine | amd64 / arm64 | nginx (101) | Pulp 管理 UI 生产镜像（nginx 静态托管 + API 反代） |
 
 
 ## `cuda12.8-dev` — 基础 CUDA 12.8 深度学习研究镜像
@@ -44,4 +45,46 @@ docker pull ghcr.io/pengweewang/cuda12.8-dev:latest
 
 # 手动指定架构
 docker pull --platform linux/arm64 ghcr.io/pengweewang/cuda12.8-dev:latest
+```
+
+
+## `pulp-ui` — Pulp 管理 UI 生产镜像
+
+基于 [pulp/pulp-ui](https://github.com/pulp/pulp-ui) 源码多阶段构建：`node:24-alpine` 执行 `npm ci && npm run build` 编译生产 bundle，`nginxinc/nginx-unprivileged` 以非 root 用户托管静态文件。
+
+- **基础**: `node:24-alpine`（构建阶段）→ `nginxinc/nginx-unprivileged:1.28-alpine`（运行阶段）
+- **多架构**: `linux/amd64` 与 `linux/arm64`（两个基础镜像均原生多架构，buildx 直接构建）
+- **生产特性**:
+  - `npm ci` 可复现构建，依赖层独立缓存
+  - nginx 托管 SPA：history 路由回退（`try_files ... /index.html`）、hash 资源一年不可变缓存、gzip 压缩
+  - API 路径反向代理（`/api` `/assets` `/auth` `/extensions` `/pulp` `/static/rest_framework` `/v2`，与上游 dev proxy 一致），上传不受 nginx body 大小限制
+  - 非 root 运行、`SIGQUIT` 优雅停止、容器内置健康检查
+- **端口自定义**:
+  - 容器监听端口: `LISTEN_PORT`（默认 `8002`，非 root 需 `>= 1024`）
+  - 宿主机端口: 运行时 `-p <host>:<container>` 决定
+  - Pulp API 地址: `PULP_API_URL`（默认 `http://127.0.0.1:8080`，按部署拓扑改为服务名或 `http://host.docker.internal:8080`）
+
+### 构建方法
+
+将 `src/pulp-ui/` 下的 `Dockerfile`、`nginx.conf.template`、`.dockerignore` 拷入 pulp-ui 仓库根目录后执行：
+
+```bash
+docker build --build-arg PULP_UI_COMMIT=$(git rev-parse --short HEAD) -t ghcr.io/pengweewang/pulp-ui:latest .
+
+# 多架构
+docker buildx build --platform linux/amd64,linux/arm64 \
+  --build-arg PULP_UI_COMMIT=$(git rev-parse --short HEAD) \
+  -t ghcr.io/pengweewang/pulp-ui:latest --push .
+```
+
+### 使用示例
+
+```bash
+# 容器监听 8002，宿主机 8080
+docker run -d --name pulp-ui -p 8080:8002 \
+  -e PULP_API_URL=http://pulp:8080 ghcr.io/pengweewang/pulp-ui:latest
+
+# 自定义端口: 容器内监听 3000，宿主机发布到 80
+docker run -d --name pulp-ui -e LISTEN_PORT=3000 -p 80:3000 \
+  -e PULP_API_URL=http://pulp:8080 ghcr.io/pengweewang/pulp-ui:latest
 ```
