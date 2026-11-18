@@ -37,8 +37,10 @@ FROM node:24-alpine AS build
 WORKDIR /pulp-ui
 
 # install dependencies first so the layer stays cached across source changes
+# (--legacy-peer-deps: v0.1.28 has a test-only peer conflict vitest@5.0.5 vs
+#  @vitest/coverage-v8@5.0.1, irrelevant to the webpack production build)
 COPY --from=source /pulp-ui/package.json /pulp-ui/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY --from=source /pulp-ui/ ./
 # PULP_UI_COMMIT (from .ui-commit) spares the build from requiring git;
