@@ -1,11 +1,12 @@
-# syntax=docker/dockerfile:1
 # =============================================================================
 # Production image for https://github.com/pulp/pulp-ui
 #
-# Usage: copy Dockerfile, nginx.conf.template and .dockerignore into the root
-# of a pulp-ui checkout, then build from there:
+# Self-contained: fetches the pulp-ui source at a pinned release tag, builds
+# the bundle and serves it with nginx. No external build context required.
 #
-#   docker build --build-arg PULP_UI_COMMIT=$(git rev-parse --short HEAD) -t pulp-ui .
+#   docker build -t pulp-ui src/pulp-ui
+#   # pin a different pulp-ui release (tag or commit sha):
+#   docker build --build-arg PULP_UI_REF=v0.1.28 -t pulp-ui src/pulp-ui
 #
 # Ports:
 #   - container listen port: env LISTEN_PORT (default 8002, must be >= 1024)
@@ -20,24 +21,32 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: build the production bundle into dist/
+# Stage 1: fetch the pulp-ui source at a pinned release
+# -----------------------------------------------------------------------------
+FROM alpine:3 AS source
+ARG PULP_UI_REF=v0.1.28
+RUN apk add --no-cache git \
+    && git clone --depth 1 --branch "${PULP_UI_REF}" https://github.com/pulp/pulp-ui.git /pulp-ui \
+    && git -C /pulp-ui rev-parse HEAD > /pulp-ui/.ui-commit \
+    && rm -rf /pulp-ui/.git
+
+# -----------------------------------------------------------------------------
+# Stage 2: build the production bundle into dist/
 # -----------------------------------------------------------------------------
 FROM node:24-alpine AS build
 WORKDIR /pulp-ui
 
 # install dependencies first so the layer stays cached across source changes
-COPY package.json package-lock.json ./
+COPY --from=source /pulp-ui/package.json /pulp-ui/package-lock.json ./
 RUN npm ci
 
-# PULP_UI_COMMIT spares the build from requiring git (it is shown in the UI's
-# about dialog); pass --build-arg to embed the real commit
-COPY . .
-ARG PULP_UI_COMMIT=unknown
-ENV PULP_UI_COMMIT=${PULP_UI_COMMIT}
-RUN npm run build
+COPY --from=source /pulp-ui/ ./
+# PULP_UI_COMMIT (from .ui-commit) spares the build from requiring git;
+# it is shown in the UI's about dialog
+RUN PULP_UI_COMMIT="$(cat .ui-commit)" npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 2: serve the bundle with nginx (non-root, unprivileged port)
+# Stage 3: serve the bundle with nginx (non-root, unprivileged port)
 # -----------------------------------------------------------------------------
 FROM nginxinc/nginx-unprivileged:1.28-alpine
 

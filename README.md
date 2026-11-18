@@ -55,6 +55,7 @@ docker pull --platform linux/arm64 ghcr.io/pengweewang/cuda12.8-dev:latest
 - **基础**: `node:24-alpine`（构建阶段）→ `nginxinc/nginx-unprivileged:1.28-alpine`（运行阶段）
 - **多架构**: `linux/amd64` 与 `linux/arm64`（两个基础镜像均原生多架构，buildx 直接构建）
 - **生产特性**:
+  - 源码按 `PULP_UI_REF` 固定 tag 拉取，构建可复现
   - `npm ci` 可复现构建，依赖层独立缓存
   - nginx 托管 SPA：history 路由回退（`try_files ... /index.html`）、hash 资源一年不可变缓存、gzip 压缩
   - API 路径反向代理（`/api` `/assets` `/auth` `/extensions` `/pulp` `/static/rest_framework` `/v2`，与上游 dev proxy 一致），上传不受 nginx body 大小限制
@@ -66,15 +67,17 @@ docker pull --platform linux/arm64 ghcr.io/pengweewang/cuda12.8-dev:latest
 
 ### 构建方法
 
-将 `src/pulp-ui/` 下的 `Dockerfile`、`nginx.conf.template`、`.dockerignore` 拷入 pulp-ui 仓库根目录后执行：
+镜像自包含（构建时按 `PULP_UI_REF` 固定 tag 拉取 pulp-ui 源码，默认 `v0.1.28`），无需外部构建上下文：
 
 ```bash
-docker build --build-arg PULP_UI_COMMIT=$(git rev-parse --short HEAD) -t ghcr.io/pengweewang/pulp-ui:latest .
+docker build -t ghcr.io/pengweewang/pulp-ui:latest src/pulp-ui
+
+# 指定上游版本（tag 或 commit sha）
+docker build --build-arg PULP_UI_REF=v0.1.28 -t ghcr.io/pengweewang/pulp-ui:latest src/pulp-ui
 
 # 多架构
 docker buildx build --platform linux/amd64,linux/arm64 \
-  --build-arg PULP_UI_COMMIT=$(git rev-parse --short HEAD) \
-  -t ghcr.io/pengweewang/pulp-ui:latest --push .
+  -t ghcr.io/pengweewang/pulp-ui:latest --push src/pulp-ui
 ```
 
 ### 使用示例
