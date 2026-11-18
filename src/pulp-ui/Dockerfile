@@ -56,7 +56,11 @@ FROM nginxinc/nginx-unprivileged:1.28-alpine
 LABEL org.opencontainers.image.title="pulp-ui" \
       org.opencontainers.image.source="https://github.com/pulp/pulp-ui"
 
-COPY --from=build /pulp-ui/dist/ /usr/share/nginx/html/
+# the bundle is emitted with WEBPACK_PUBLIC_PATH=/static/pulp_ui/, so dist/
+# must live under that URL prefix; the app fetches its runtime config from
+# the root path (src/ui-config.ts), hence the extra copy
+COPY --from=build /pulp-ui/dist/ /usr/share/nginx/html/static/pulp_ui/
+COPY --from=build /pulp-ui/dist/pulp-ui-config.json /usr/share/nginx/html/pulp-ui-config.json
 
 # rendered by envsubst at container start (see nginx.conf.template)
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template

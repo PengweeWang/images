@@ -7,28 +7,33 @@ server {
     server_name _;
 
     root /usr/share/nginx/html;
-    index index.html;
 
-    # SPA: serve index.html for all client-side routes
+    # SPA fallback: all client-side routes (UI_BASE_PATH is /ui/) serve
+    # the bundle's index.html
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ /static/pulp_ui/index.html;
         add_header Cache-Control "no-cache";
     }
 
+    # UI bundle, emitted under /static/pulp_ui/ (WEBPACK_PUBLIC_PATH)
+    location ^~ /static/pulp_ui/ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
     # hashed build artifacts, safe to cache "forever"
-    location ^~ /js/ {
+    location ^~ /static/pulp_ui/js/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
-    location ^~ /css/ {
+    location ^~ /static/pulp_ui/css/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
-    location ^~ /fonts/ {
+    location ^~ /static/pulp_ui/fonts/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
-    location ^~ /sourcemaps/ {
+    location ^~ /static/pulp_ui/sourcemaps/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
