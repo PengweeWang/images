@@ -36,13 +36,14 @@ RUN apk add --no-cache git \
 FROM node:24-alpine AS build
 WORKDIR /pulp-ui
 
-# install dependencies first so the layer stays cached across source changes
+# v0.1.28 is a monorepo: npm ci triggers the root "prepare" script which builds
+# the @pulp-ui/sdk workspace, so the full tree must be copied up front. The
+# layer only busts when PULP_UI_REF changes, so caching is effectively stable.
 # (--legacy-peer-deps: v0.1.28 has a test-only peer conflict vitest@5.0.5 vs
 #  @vitest/coverage-v8@5.0.1, irrelevant to the webpack production build)
-COPY --from=source /pulp-ui/package.json /pulp-ui/package-lock.json ./
+COPY --from=source /pulp-ui/ ./
 RUN npm ci --legacy-peer-deps
 
-COPY --from=source /pulp-ui/ ./
 # PULP_UI_COMMIT (from .ui-commit) spares the build from requiring git;
 # it is shown in the UI's about dialog
 RUN PULP_UI_COMMIT="$(cat .ui-commit)" npm run build
